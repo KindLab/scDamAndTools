@@ -34,14 +34,14 @@ pip install git+https://github.com/KindLab/scDamAndTools.git
 **scDamAndTools** contains eight functions for the processing of
 |function|description|
 |---|---|
-|**add_read_prefix.awk**|Appends additional bases (e.g. "GA") to the beginning of reads|
-|**bin_damid_counts.py**|Bins UMI-unique DamID counts into genomically equal-sized bins|
-|**demultiplex.py**|Demultiplexes all reads in a library based on their barcode|
-|**fetch_regions.py**|Generates _in silico_ reads of a defined read length for all motif occurrences|
-|**find_motif_occurrences.py**|Finds motif (e.g. "GATC") occurrences genome-wide from a FASTA file|
-|**generate_celseq_counts.py**|Processes aligned CEL-Seq reads into a table of UMI-unique counts|
-|**generate_damid_counts.py**|Processes aligned DamID reads into a table of UMI-unique counts|
-|**write_posarray.py**|Generates a table with the positions of a motif genome-wide|
+|`add_read_prefix.awk`|Appends additional bases (e.g. "GA") to the beginning of reads.|
+|`bin_damid_counts.py`|Bins UMI-unique DamID counts into genomically equal-sized bins.|
+|`demultiplex.py`|Demultiplexes all reads in a library based on their barcode.|
+|`fetch_regions.py`|Generates _in silico_ reads of a defined read length for all motif occurrences.|
+|`find_motif_occurrences.py`|Finds motif (e.g. "GATC") occurrences genome-wide from a FASTA file.|
+|`generate_celseq_counts.py`|Processes aligned CEL-Seq reads into a table of UMI-unique counts.|
+|`generate_damid_counts.py`|Processes aligned DamID reads into a table of UMI-unique counts.|
+|`write_posarray.py`|Generates a table with the positions of a motif genome-wide.|
 
 ### add_read_prefix.awk
 
