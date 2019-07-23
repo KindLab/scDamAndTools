@@ -27,7 +27,7 @@ pip install cython
 
 ### Installing scDamAndTools
 ```
-pip install git+https://github.com/...
+pip install git+https://github.com/KindLab/scDamAndTools.git
 ```
 
 ## Usage
