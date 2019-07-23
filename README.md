@@ -45,6 +45,16 @@ pip install git+https://github.com/KindLab/scDamAndTools.git
 |`write_posarray.py`|Generates a table with the positions of a motif genome-wide.|
 
 ### add_read_prefix.awk
+```
+add_read_prefix.awk -v PREFIX="GA" infile
+```
+
+Takes a FASTQ file as an input and appends the specified prefix to the beginning of all reads. The output in FASTQ format and is directed to STDOUT.
+
+|arguments|option|description|
+|---|---|---|
+|`infile`|required|FASTQ file with sequence reads. Alternatively, reads can be piped via STDIN.|
+|`-v PREFIX=`|required|Sequence to be appended to the beginning of all reads.|
 
 ### bin_damid_counts.py
 ```
