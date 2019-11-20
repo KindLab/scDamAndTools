@@ -215,13 +215,100 @@ Wrapper script that aligns DamID reads (using HISAT2) and subsequently calls `ge
 write_posarray.py [-h] [-l ELEMENT_LENGTH] --outfile OUTFILE pos_file
 ```
 
-Takes a _BED_ file describing all motif occurrences and generates a table in HDF5 format with all motif positions genome-wide. For each chromosome, the first entry is the position of the first motif occurrence on the plus strand, subsequent values represent the distance to the next motif. Only positions on the plus strand are indicated, motif positions on the minus strand can be inferred.
+Takes a _BED_ file describing all motif occurrences and generates a table in _HDF5_ format with all motif positions genome-wide. For each chromosome, the first entry is the position of the first motif occurrence on the plus strand, subsequent values represent the distance to the next motif. Only positions on the plus strand are indicated, motif positions on the minus strand can be inferred.
 
 |arguments|option|description|
 |---|---|---|
 |`pos_file`|required|BED input file with motif positions.|
 |`--outfile`|required|Output file name (HDF5) for posarray.|
 |`-l/--element-length`|optional|Length of the motif in bp (e.g. 4 for the GATC motif) [default: infer length from input].|
+
+## Example usage
+
+The analysis steps in this and subsequent sections demonstrate how scDam&T-seq data can be analysed using the provided software package (scDamAndTools). File names and genome references are chosen to match the test data available as part of the package. Care should be taken to modify these when applying the analysis on other data.
+
+### Downloading genome reference files and generating HISAT2 index 
+1. For the purpose of this tutorial, the FASTA file, GTF file and HISAT2 index will all be placed in a folder named “references”. For that reason, generate this folder in your own working directory, or replace all mentions of the “references” directory with the path of your own choice:..
+```mkdir ./references```
+
+2. Download the reference sequence of the relevant species, for example from [the ensembl webpage](http://www.ensembl.org/info/data/ftp/index.html). Click the “DNA (FASTA)” link and download the file ending with ‘dna.primary_assembly.fa.gz’. Save the file in the “references” directory.
+
+3. Download the GTF file for the relevant species, for example from [the ensembl webpage](http://www.ensembl.org/info/data/ftp/index.html). Place the downloaded file in the “references” directory.
+
+4. If using ERCC spike-ins, their sequences should be added to the genome FASTA file and the GTF file. 
+
+5. Generate a HISAT2 index:
+```
+HISAT2_INDEX="./references/Mus_musculus.GRCm38.dna.primary_assembly.with_ERCC"
+FASTAFN="./references/Mus_musculus.GRCm38.dna.primary_assembly.with_ERCC.fa"
+hisat2-build $FASTAFN $HISAT2_INDEX
+```
+
+### Generate GATC reference arrays
+To efficiently match obtained DamID reads to specific instances of the GATC motif in the genome, we generate two reference arrays. The first array (“position array” or “posarray”) contains the positions of all GATC positions in the genome. The second array (“mappability array” or “maparray”) indicates whether it is possible to uniquely align a read derived from a particular (strand-specific) GATC instance. The mappability array is used to filter out ambiguously aligning GATCs and can serve as an indicator of the (mappable) GATC density along the chromosomes. During the generation of the mappability array, in silico reads are generated for each GATC instance and are subsequently mapped back to the reference genome. The length of the reads should be chosen to be the same as the length of the reads obtained in the experiment (excluding the adapter).
+
+#### Option 1: Using the wrapper script
+6 Generate the motif position and mappability arrays:
+```
+IN_SILICO_READLENGTH=65
+ARRAY_PREFIX="./refarrays/Mus_musculus.GRCm38.dna.primary_assembly"
+create_motif_refarrays \
+    -m "GATC" \
+    -o $ARRAY_PREFIX \
+    -r $IN_SILICO_READLENGTH \
+    -x $HISAT2_INDEX \
+    $FASTAFN
+```
+...The script generates three files ending in “.positions.bed.gz” (all occurrences of the GATC motif in BED format), “.posarray.hdf5” (all occurrences of the GATC motif as a hdf5 array), and “.maparray.hdf5” (the mappability of all GATC motifs as a hdf5 array).
+
+#### Option 2: Performing the individual steps
+6a. Find “GATC” occurrences in genome:
+```
+find_motif_occurrences.py \
+    $FASTAFN \
+    "GATC" \
+| awk '$1 !~ /^ERCC/' \
+| gzip > ./references/Mus_musculus.GRCm38.dna.primary_assembly.GATC.positions.bed.gz
+```
+...GATC positions in the ERCC sequences are discarded, since these are not present in the genomic DNA of the cells.
+
+6b. Generate an HDF5 file with all GATC positions in the genome:
+```
+write_posarray.py \
+    --outfile ./references/Mus_musculus.GRCm38.dna.primary_assembly.GATC.posarray.hdf5 \
+    ./reference/Mus_musculus.GRCm38.dna.primary_assembly.GATC.positions.bed.gz
+```
+
+6c. Generate _in silico_ reads mapping to GATC positions and align these back to the reference to determine the mappability of the positions:
+```
+IN_SILICO_READLENGTH=65;
+fetch_regions.py \
+    -q \
+    -l $IN_SILICO_READLENGTH \
+    ./references/Mus_musculus.GRCm38.dna.primary_assembly.GATC.positions.bed.gz \
+    $FASTAFN \
+| hisat2 \
+  --seed 42 \
+  -x $HISAT2_INDEX \
+  -U - \
+  --no-spliced-alignment \
+  --mp '2,0' \
+  --sp '4,0' \
+| samtools view -ub - \
+| samtools sort -m 500M -l 9 \
+> ./references/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_65.sorted.bam
+```
+
+6d. Use the aligned _in silico_ reads to generate a mappability array:
+```
+generate_damid_counts.py \
+    -vvv \
+    --outfile ./reference/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_65.maparray.hdf5 \
+    --pos-file ./reference/Mus_musculus.GRCm38.dna.primary_assembly.GATC.posarray.hdf5 \  
+    ./reference/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_65.sorted.bam
+```
+
+
 
 ## License
 **scDamAndTools** is licensed under **MIT**. The detailed license terms are in the **LICENSE** file.
