@@ -80,7 +80,7 @@ Takes one or more position-wise UMI-unique DamID count tables (_HDF5_) as an inp
 ```
 create_motif_arrays [-h] [-m MOTIF] -r READLENGTH -x HISAT2_INDEX -o OUTPREFIX fastafile
 ```
-A wrapper function that combines all necessary steps to generate a motif position and mappability array. It takes the FASTA file of the relevant genome as input and generates a BED file and HDF5 file indicating the genome-wide positions of the motif (e.g. "GATC") and generates a HDF5 file that indicates whether each motif occurrence can be aligned based on the expected readlength.
+A wrapper function that combines all necessary steps to generate a motif position and mappability array. It takes the _FASTA_ file of the relevant genome as input and generates a _BED_ file and _HDF5_ file indicating the genome-wide positions of the motif (e.g. "GATC") and generates a _HDF5_ file that indicates whether each motif occurrence can be aligned based on the expected readlength.
 
 |arguments|option|description|
 |---|---|---|
@@ -175,6 +175,40 @@ Takes an alignment file (_BAM_) as input and generates a table of UMI-unique GAT
 |`--save-stats`|optional|If set, a text file containing the DamID counting statistics will be generated [default: False].|
 |`-v/--verbose`|optional|Set level of logging messages.|
 |`-q/--quiet`|optional|Silence all logging messages.|
+
+### process_celseq_reads
+```
+process_celseq_reads [-h] -o OUTPREFIX -g GTF -x HISAT2_INDEX fastqfile
+```
+
+Wrapper script that aligns CEL-Seq reads (using HISAT2) and subsequently calls `generate_celseq_counts.py`. The function takes CEL-Seq reads (_FASTQ_) as input and outputs a alignment file (_BAM_) and count file (_HDF5_), containing the number of observed UMI-unique transcripts per gene, sorted by their ENSEMBL ID as provided in the GTF file.
+
+|arguments|option|description|
+|---|---|---|
+|`fastqfile`|required|FASTQ file containing CEL-Seq reads.|
+|`-o`|required|The prefix (including path) for the generated alignment and count file.|
+|`-g`|required|GTF file for the relevant genome reference.|
+|`-x`|required|HISAT2 index for the relevant genome reference.|
+|`-q`|optional|Minimum mapping quality to retain read [default: 10].|
+
+### process_damid_reads
+```
+process_damid_reads [-h] [-m PREFIX] [-q MIN_MAPQ] [-u] [-k KEEP_N] [-d MIN_EDITDISTANCE] -o OUTPREFIX -p POSARRAY -x HISAT2_INDEX fastqfile
+```
+
+Wrapper script that aligns DamID reads (using HISAT2) and subsequently calls `generate_damid_counts.py`. The function takes DamID reads (_FASTQ_) as input and outputs a alignment file (_BAM_) and count file (_HDF5_), containing the number of observed (UMI-unique) counts per motif occurrence.
+
+|arguments|option|description|
+|---|---|---|
+|`fastqfile`|required|FASTQ file containing DamID reads.|
+|`-o`|required|The prefix (including path) for the generated alignment and count file.|
+|`-p`|required|Motif position file for the relevant genome reference.|
+|`-x`|required|HISAT2 index for the relevant genome reference.|
+|`-m`|optional|
+|`-q`|optional|Minimum mapping quality of aligned reads. Reads below the threshold are discarded [default: 0].|
+|`-u`|optional|If set, available UMI information will be used to remove PCR duplicates [default: False].|
+|`-k`|optional|Maximum number of unique UMIs to allow per position [default: keep all].|
+|`-d`|optional|Minimum edit distance between pairs of UMIs that are observed per position [default: 1].|
 
 ### write_posarray.py
 ```
