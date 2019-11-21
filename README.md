@@ -225,7 +225,17 @@ Takes a _BED_ file describing all motif occurrences and generates a table in _HD
 
 ## Example usage
 
-The analysis steps in this and subsequent sections demonstrate how scDam&T-seq data can be analysed using the provided software package (scDamAndTools). File names and genome references are chosen to match the test data available as part of the package. Care should be taken to modify these when applying the analysis on other data.
+The analysis steps in this and subsequent sections demonstrate how scDam&T-seq data can be analysed using the provided software package (scDamAndTools). File names and genome references are chosen to match the test data available as part of the package. Care should be taken to modify these when applying the analysis on other data. In some parts of the workflow, we offer the option to use a wrapper script to combine multiple processing steps. Although these wrapper scripts ease the workflow, they are less customizable. When applying scDamAndTools in a custom workflow, the individual steps offer more flexibility. 
+
+### Software requirements
+Many of the functions provided in the scDamAndTools package are Python3-based and can be easily incorporated in a custom workflow. An exception this are the wrapper functions "create_motif_refarrays", "process_celseq_reads" and "process_damid_reads", which are bash scripts. The workflow as explained below was developed using the following environment and tools:
+
+- Unix/Linux operating system (used version: Ubuntu 16.04.6 LTS)
+- Bash Shell (used version: version 4.3.48(1)-release)
+- HISAT2 (https://ccb.jhu.edu/software/hisat2/index.shtml, used version: v2.1.0)
+- Python3 (https://www.python.org, used version: v3.6.3)
+- Samtools (http://www.samtools.sourceforge.net, used version: v1.6)
+
 
 ### Downloading genome reference files and generating HISAT2 index 
 1. For the purpose of this tutorial, the FASTA file, GTF file and HISAT2 index will all be placed in a folder named “references”. For that reason, generate this folder in your own working directory, or replace all mentions of the “references” directory with the path of your own choice:..
