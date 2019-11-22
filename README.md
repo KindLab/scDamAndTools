@@ -87,7 +87,7 @@ A wrapper function that combines all necessary steps to generate a motif positio
 |`fastafile`|required|FASTA file of the relevant genomic reference.|
 |`-m`|optional|The sequence motif targeted by the used restriction enzyme [default: GATC].|
 |`-o`|required|The prefix (including path) for the position and mappability files.|
-|`-r`|required|The expected readlength of the sequencing reads (specifically R1).|
+|`-r`|required|The expected readlength of the sequencing reads (specifically R1), excluding barcode and UMI.|
 |`-x`|required|HISAT2 reference index.|
 
 ### demultiplex.py
@@ -204,11 +204,11 @@ Wrapper script that aligns DamID reads (using HISAT2) and subsequently calls `ge
 |`-o`|required|The prefix (including path) for the generated alignment and count file.|
 |`-p`|required|Motif position file for the relevant genome reference.|
 |`-x`|required|HISAT2 index for the relevant genome reference.|
-|`-m`|optional|
+|`-m`|optional|Motif prefix to append to reads [default: GA].| 
 |`-q`|optional|Minimum mapping quality of aligned reads. Reads below the threshold are discarded [default: 0].|
 |`-u`|optional|If set, available UMI information will be used to remove PCR duplicates [default: False].|
-|`-k`|optional|Maximum number of unique UMIs to allow per position [default: keep all].|
-|`-d`|optional|Minimum edit distance between pairs of UMIs that are observed per position [default: 1].|
+|`-k`|optional|Maximum number of unique UMIs to allow per position [default: 4].|
+|`-d`|optional|Minimum edit distance between pairs of UMIs that are observed per position [default: 2].|
 
 ### write_posarray.py
 ```
