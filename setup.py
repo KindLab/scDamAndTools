@@ -19,16 +19,20 @@ setuptools.setup(
         "pysam",
         "tqdm",
         "sortedcontainers",
-        "cython"
+        "cython",
+        "pandas"
     ],
     scripts = [
         "./scripts/add_read_prefix.awk",
         "./scripts/bin_damid_counts.py",
+        "./scripts/create_motif_refarrays",
         "./scripts/demultiplex.py",
         "./scripts/fetch_regions.py",
         "./scripts/find_motif_occurrences.py",
         "./scripts/generate_celseq_counts.py",
         "./scripts/generate_damid_counts.py",
+        "./scripts/process_celseq_reads",
+        "./scripts/process_damid_reads",
         "./scripts/write_posarray.py"
     ],
     py_modules = [

@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+
+MOTIFPREFIX="GA";
+MINMAPQ=10;
+UMI=false;
+KEEPN=4;
+MINEDITDISTANCE=2;
+
+# parsing arguments
+while getopts ":ho:p:x:m:q:uk:d:" opt; do
+  case ${opt} in
+    h )
+      echo "Usage: process_damid_reads [options] -o <outprefix> -p <posarray> -x <hisat2_index> <fastqfile> "
+      echo "    -h         Print this help message."
+      echo "    -o         Outprefix including the path for the output. Required."
+      echo "    -p         Posarray indicating the MOTIF positions genome-wide. Required."
+      echo "    -x         HISAT2 index. Required."
+      echo "    -m         Motif prefix to append to the beginning of reads. Default: GA."
+      echo "    -q         Minimum mapping quality to retain read. Default: 10."
+      echo "    -u         UMI present. Default: False."
+      echo "    -k         Maximum number of unique UMIs to accept per sequence MOTIF occurrence. Default: 4."
+      echo "    -d         Minimum edit distance between UMIs aligning to the same MOTIF occurrence. This variable is ignored if "-u" is not set. Default: 2."
+      echo "    fastqfile  FASTQ file with raw reads. Required."
+      exit 0
+      ;;
+    o )
+      OUTPREFIX="$OPTARG"
+      output_provided=true
+      ;;
+    p )
+      POSARRAY="$OPTARG"
+      pos_provided=true
+      ;;
+    x )
+      HISAT2_INDEX="$OPTARG"
+      index_provided=true
+      ;;
+    m )
+      MOTIFPREFIX="$OPTARG"
+      ;;
+    q )
+      MINMAPQ="$OPTARG"
+      ;;
+    u )
+      UMI=true
+      ;;
+    k )
+      KEEPN="$OPTARG"
+      ;;
+    d )
+      MINEDITDISTANCE="$OPTARG"
+      ;;
+    \? )
+      echo "Invalid option: $OPTARG" 1>&2
+      exit 1
+      ;;
+    : )
+      echo "Invalid option: $OPTARG requires an argument" 1>&2
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+FASTQFILE="${1?Error: no FASTQ file provided.}"
+if [ ! -f $FASTQFILE ]; then
+    echo "Error: ${FASTQFILE} does not exist" 1>&2
+    abort_status=true
+fi;
+
+if [ ! $index_provided ]; then
+  echo "Error: No bowtie2 index provided, -x argument is required." 1>&2
+  abort_status=true
+else
+  for f in ${HISAT2_INDEX}*.ht*; do
+      if [ ! -e "$f" ]; then
+        echo "Error: Provided hisat2 index does not exist."
+        abort_status=true
+      fi;
+      break
+  done
+fi
+
+if [ ! $pos_provided ]; then
+  echo "Error: No posarray provided, -p argument is required." 1>&2
+  abort_status=true
+elif [ ! -f $POSARRAY ]; then
+  echo "Error: Provided posarray does not exist."
+  abort_status=true
+fi
+
+if [ ! $output_provided ]; then
+  echo "Error: No outprefix provided, -o argument is required." 1>&2
+  abort_status=true
+fi
+
+if [ $abort_status ]; then
+  exit 1
+fi
+
+## generate output path if not existing
+OUTDIR=$(echo "$OUTPREFIX" | grep -o ".*/");
+if [ ! -d $OUTDIR ]; then
+  mkdir -p $OUTDIR;
+fi;
+
+## aligning DamID reads
+echo "Aligning reads to genome."
+BAMFN="${OUTPREFIX}.sorted.bam";
+SORTTMP="${OUTPREFIX}.sort_tmp";
+
+gzip -dc "$FASTQFILE" \
+| add_read_prefix.awk -v PREFIX="GA" \
+| hisat2 \
+  --seed 42 \
+  -x "$HISAT2_INDEX" \
+  -U - \
+  --no-spliced-alignment \
+  --mp '2,0' \
+  --sp '4,0' \
+| samtools view -ub - \
+| samtools sort -m 500M -T "$SORTTMP" \
+  > "${BAMFN}"
+
+## process aligned reads and count MOTIF occurrences
+echo "Counting motif occurrences."
+COUNTFN="${OUTPREFIX}.counts.hdf5";
+
+if [[ $UMI ]]; then
+  generate_damid_counts.py \
+    -vvv \
+    --outfile "$COUNTFN" \
+    --min-mapq $MINMAPQ \
+    --umi-present \
+    --keep-n $KEEPN \
+    --min-editdistance $MINEDITDISTANCE \
+    --pos-file "$POSARRAY" \
+    --save-stats \
+    "${BAMFN}"
+else
+  generate_damid_counts.py \
+    -vvv \
+    --outfile "$COUNTFN" \
+    --min-mapq $MINMAPQ \
+    --keep-n $KEEPN \
+    --pos-file "$POSARRAY" \
+    --save-stats \
+    "${BAMFN}"
+fi;

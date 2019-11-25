@@ -316,6 +316,18 @@ def main():
     else:
         log.setLevel([logging.WARNING, logging.INFO, logging.DEBUG][min(2, args.verbose)])
 
+    outdir = "/".join(args.outfmt.split("/")[:-1])
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir)
+    if args.unmatched_outfile is not None:
+        outdir = "/".join(args.unmatched_outfile.split("/")[:-1])
+        if not os.path.isdir(outdir):
+            os.mkdir(outdir)
+    if args.ambiguous_outfile is not None:
+        outdir = "/".join(args.ambiguous_outfile.split("/")[:-1])
+        if not os.path.isdir(outdir):
+            os.mkdir(outdir)
+
     def _open_fn(fn, writeable=False):
         if fn == "-":
             return sys.stdin

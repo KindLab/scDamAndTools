@@ -17,6 +17,7 @@ from collections import defaultdict, Counter, OrderedDict
 from itertools import groupby, chain
 
 import numpy as np
+import pandas as pd
 import h5py
 import pysam
 from tqdm import tqdm
@@ -192,6 +193,7 @@ def main():
     ap.add_argument('--mode', '-m', choices=_MODE_CHOICES, default="intersection-strict", required=False, help="Overlap mode for aligning reads to features. Based on HTseq.")
     ap.add_argument('--min-mapq', type=int, default=0, required=False, help="Set a minimum mapping quality as a threshold for using alignments. Default is 0.")
     ap.add_argument('--outfile', '-o', required=False, metavar="HDF5_FILE", help="Output file name for the resulting counts.")
+    ap.add_argument('--save-stats', action="store_true", default=False, required=False, help="If set, a file containing the count statistics is generated. Default is False.")
     ap.add_argument('infiles', nargs="+", metavar="bamfile", help="Input BAM file(s).")
 
     args = ap.parse_args()
@@ -223,6 +225,11 @@ def main():
     counts, num_unique_counts = reduce_umi_sequence_derivatives(umi_counts)
     stats["unique_counts"] += num_unique_counts
     log.debug("Stats: %s" % "; ".join(["%s: %d" % (k, v) for (k, v) in stats.items()]))
+    if args.save_stats:
+        var = list(stats.keys())
+        val = [stats[k] for k in var]
+        stats = pd.DataFrame({'sample': np.repeat(args.outfile.split('/')[-1], len(var)), 'type': var , 'counts': val})
+        stats.to_csv(args.outfile.replace('.hdf5', '.stats.tsv'), index=False, header=False, sep="\t")
 
     log.debug("Writing counts")
     if args.outfile is None:

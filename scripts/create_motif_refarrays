@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+
+MOTIF="GATC";
+
+# parsing arguments
+while getopts ":hm:o:r:x:" opt; do
+  case ${opt} in
+    h )
+      echo "Usage: create_motif_refarrays [-m <motif>] -r <readlength> -x <hisat2_index> -o <outprefix> <fastafile>"
+      echo "    -h         Print this help message."
+      echo "    -m         Sequence motif for which positions throughout the genome need to be mapped. Default: GATC."
+      echo "    -o         Outprefix including the path for the posarray. Required."
+      echo "    -r         Expected readlength, excluding sample barcode and including MOTIF sequence. Required."
+      echo "    -x         HISAT2 index. Required."
+      echo "    fastafile  Genome FASTA file. Required."
+      exit 0
+      ;;
+    m )
+      MOTIF="$OPTARG"
+      ;;
+    r )
+      READLENGTH="$OPTARG"
+      readlength_provided=true
+      ;;
+    o )
+      OUTPREFIX="$OPTARG"
+      output_provided=true
+      ;;
+    x )
+      HISAT2_INDEX="$OPTARG"
+      index_provided=true
+      ;;
+    \? )
+      echo "Invalid option: $OPTARG" 1>&2
+      exit 1
+      ;;
+    : )
+      echo "Invalid option: $OPTARG requires an argument" 1>&2
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+FASTAFILE="${1?Error: no fastafile provided.}"
+if [ ! -f $FASTAFILE ]; then
+    echo "Error: ${FASTAFILE} does not exist" 1>&2
+    abort_status=true
+fi;
+
+if [ ! $index_provided ]; then
+  echo "Error: No hisat2 index provided, -x argument is required." 1>&2
+  abort_status=true
+else
+  for f in ${HISAT2_INDEX}*bt2; do
+      if [ ! -e "$f" ]; then
+        echo "Error: Provided hisat2 index does not exist."
+        abort_status=true
+      fi;
+      break
+  done
+fi
+
+if [ ! $readlength_provided ]; then
+  echo "Error: No readlength provided, -r argument is required." 1>&2
+  abort_status=true
+fi
+
+if [ ! $output_provided ]; then
+  echo "Error: No outprefix provided, -o argument is required." 1>&2
+  abort_status=true
+fi
+
+if [ $abort_status ]; then
+  exit 1
+fi
+
+## generate output path if not existing
+OUTDIR=$(echo $OUTPREFIX | grep -o ".*/");
+if [ ! -d $OUTDIR ]; then
+  mkdir -p $OUTDIR;
+fi;
+
+## Find MOTIF occurrences in genome
+echo "Finding ${MOTIF} occurrences in genome."
+POSBED="${OUTPREFIX}.${MOTIF}.positions.bed.gz";
+find_motif_occurrences.py \
+  $FASTAFILE \
+  $MOTIF \
+| awk '$1 !~ /^ERCC/' \
+| gzip -c \
+> $POSBED;
+
+## Generate an HDF5 file with all MOTIF positions in the genome
+echo "Generating posarray (HDF5) with all ${MOTIF} occurrences in genome."
+POSHDF5="${OUTPREFIX}.${MOTIF}.posarray.hdf5";
+write_posarray.py \
+  --outfile $POSHDF5 \
+  $POSBED;
+
+## Generate in silico reads of readlength=READLENGTH at MOTIF positions
+echo "Aligning in silico reads of readlength=${READLENGTH}bp generated from all ${MOTIF} positions in genome."
+MAPBAM="${OUTPREFIX}.${MOTIF}.readlength_${READLENGTH}.sorted.bam";
+SORTTMP="${OUTPREFIX}.${MOTIF}.readlength_${READLENGTH}.sort_tmp";
+fetch_regions.py \
+  -q \
+  -l $READLENGTH \
+  $POSBED \
+  $FASTAFILE \
+| hisat2 \
+  --seed 42 \
+  -x "$HISAT2_INDEX" \
+  -U - \
+  --no-spliced-alignment \
+  --mp '2,0' \
+  --sp '4,0' \
+| samtools view -ub \
+| samtools sort -m 500M -l -9 -T "$SORTTMP" \
+  > $MAPBAM
+
+## Generate a HDF5 file indicating the mappability of all MOTIF occurrences genome-wide
+echo "Generating maparray indicating the mappability of all ${MOTIF} occurrences genome-wide."
+MAPHDF5="${OUTPREFIX}.${MOTIF}.readlength_${READLENGTH}.maparray.hdf5";
+generate_damid_counts.py \
+  -vvv \
+  --outfile $MAPHDF5 \
+  --pos-file $POSHDF5 \
+  $MAPBAM
+
+rm $MAPBAM

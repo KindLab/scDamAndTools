@@ -15,6 +15,7 @@ from itertools import groupby, chain, product
 from math import floor
 
 import numpy as np
+import pandas as pd
 import h5py
 import pysam
 from tqdm import tqdm
@@ -156,7 +157,7 @@ def write_counts(outfn, chrom, counts):
     return
 
 
-def count_reads_with_umis(bamfn, outfn, mappable_pos, min_mapq, element_length, umi_length, keepn, min_editdistance, invalid_outfn=None):
+def count_reads_with_umis(bamfn, outfn, mappable_pos, min_mapq, element_length, umi_present, keepn, min_editdistance, invalid_outfn=None):
     # open the BAM files
     bf = pysam.Samfile(bamfn, 'rb')
 
@@ -178,7 +179,7 @@ def count_reads_with_umis(bamfn, outfn, mappable_pos, min_mapq, element_length, 
     missing_chroms = set(chroms)
 
     # iniatie read & count stats
-    if umi_length is not None:
+    if umi_present:
         stats = OrderedDict([("total_reads", 0), ("unmapped_reads", 0), ("lowmapq_reads", 0), ("nongatc_reads", 0), ("invalidumi_reads", 0), ("valid_reads", 0), ("unique_counts", 0)])
     else:
         stats = OrderedDict([("total_reads", 0), ("unmapped_reads", 0), ("lowmapq_reads", 0), ("nongatc_reads", 0), ("valid_reads", 0), ("counts", 0)])
@@ -199,8 +200,8 @@ def count_reads_with_umis(bamfn, outfn, mappable_pos, min_mapq, element_length, 
         missing_chroms.remove(chrom)
 
         # initiate a counter dictionary that keeps track of observed GATC positions, their strand, the observed UMIs and their count
-        # if umi_length is not specified, UMIs are not taken into account
-        if umi_length is not None:
+        # if umi_present = FALSE, UMIs are not taken into account
+        if umi_present:
             umi_counts = {s: defaultdict(lambda: Counter()) for s in ["+", "-"]}
         else:
             umi_counts = {s: Counter() for s in ["+", "-"]}
@@ -239,7 +240,7 @@ def count_reads_with_umis(bamfn, outfn, mappable_pos, min_mapq, element_length, 
                 continue
 
             # add read to umi_count dict
-            if umi_length is not None:
+            if umi_present:
                 umiseq = get_umi_seq(read.qname)
                 # discard reads that have UMIs containing invalid bases
                 if not all([base in BASES for base in umiseq]):
@@ -254,7 +255,7 @@ def count_reads_with_umis(bamfn, outfn, mappable_pos, min_mapq, element_length, 
                 umi_counts[strand][gatcpos] += 1
 
         # reducing chromosome counts
-        if umi_length is not None:
+        if umi_present:
             counts = {s: reduce_umi_sequence_derivatives(umi_counts[s], keepn, min_editdistance) for s in ["+", "-"]}
             d = np.array([[counts[s].get(i, 0) for i in mappable_pos[chrom]] for s in ["+", "-"]])
             stats["unique_counts"] += d.sum()
@@ -280,10 +281,11 @@ def main():
     ap.add_argument('--outfile', required=True, help="HDF5 output file to write counts to.")
     ap.add_argument('--invalid-outfile', required=False, help="Optional BAM output file to store reads aligning to non-GATC positions.")
     ap.add_argument('--min-mapq', type=int, default=DEFAULT_MIN_MAPQ, required=False, help="Set a minimum mapping quality as a threshold for using alignments. Default is 0.")
-    ap.add_argument('--umi-length', type=int, default=None, required=False, help="The length of the used UMIs. If not provided, the script assumes that no UMIs were used.")
+    ap.add_argument('--umi-present', action="store_true", default=False, required=False, help="If set, the script uses UMI information to eliminate PCR duplicates.")
     ap.add_argument('--keep-n', type=int, required=False, default=None, help='How many distinct UMIs to keep per GATC position. Default is to keep all.')
     ap.add_argument('--min-editdistance', type=int, required=False, default=1, help='The minimum number of base differences between two UMIs at the same GATC for them to be considered distinct.')
     ap.add_argument('--pos-file', required=True, metavar="HDF5_FILE", help="File with all GATC positions in the genome.")
+    ap.add_argument('--save-stats', action="store_true", default=False, required=False, help="If set, a file containing the count statistics is generated. Default is False.")
     ap.add_argument('infile', help="BAM input file (sorted by genomic position). Use '-' for STDIN")
 
     args = ap.parse_args()
@@ -303,8 +305,13 @@ def main():
 
     log.debug("Counting reads and filtering from file %s" % args.infile)
 
-    stats = count_reads_with_umis(args.infile, args.outfile, mappable_pos, args.min_mapq, element_length, args.umi_length, args.keep_n, args.min_editdistance, args.invalid_outfile)
+    stats = count_reads_with_umis(args.infile, args.outfile, mappable_pos, args.min_mapq, element_length, args.umi_present, args.keep_n, args.min_editdistance, args.invalid_outfile)
     log.info("; ".join(map(lambda t: "%s: %d" % t, stats.items())))
+    if args.save_stats:
+        var = list(stats.keys())
+        val = [stats[k] for k in var]
+        stats = pd.DataFrame({'sample': np.repeat(args.outfile.split('/')[-1], len(var)), 'type': var , 'counts': val})
+        stats.to_csv(args.outfile.replace('.hdf5', '.stats.tsv'), index=False, header=False, sep="\t")
     log.debug("Counting reads and filtering from file %s [DONE]" % args.infile)
 
     return
