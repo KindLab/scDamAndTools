@@ -6,7 +6,7 @@
 1. [Installation](#installation)
 2. [Available functions](#available-functions)
 3. [Example usage](#example-usage)
-4. [Licence](#licence)
+4. [License](#license)
 5. [References](#references)
 
 ## Installation
