@@ -52,7 +52,7 @@ if [ ! $index_provided ]; then
   echo "Error: No hisat2 index provided, -x argument is required." 1>&2
   abort_status=true
 else
-  for f in ${HISAT2_INDEX}*bt2; do
+  for f in ${HISAT2_INDEX}*.ht*; do
       if [ ! -e "$f" ]; then
         echo "Error: Provided hisat2 index does not exist."
         abort_status=true
