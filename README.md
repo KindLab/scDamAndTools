@@ -306,6 +306,7 @@ fetch_regions.py \
     $FASTAFN \
 | hisat2 \
   --seed 42 \
+  -f \
   -x $HISAT2_INDEX \
   -U - \
   --no-spliced-alignment \
