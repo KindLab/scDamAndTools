@@ -479,6 +479,9 @@ index01.DamID_BC_001.counts.hdf5    valid_reads     38830
 index01.DamID_BC_001.counts.hdf5    unique_counts   31702
 ```
 
+Plotting the binned counts observed over chromosome 19 yields the following enrichment profiles:
+[Expected DamID profiles](tutorial/damid_output.png)
+
 ### Processing the CEL-Seq reads to counts
 The subsequent steps need to be performed on all CEL-Seq demultiplexed files. It is highly recommended that this process be parallelized on a high-performance computing cluster. The amount of time necessary for these steps depends entirely on the number of libraries, samples per library and available computing cores.
 
