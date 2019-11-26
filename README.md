@@ -243,6 +243,8 @@ Many of the functions provided in the scDamAndTools package are Python3-based an
 - Python3 (https://www.python.org, used version: v3.6.3)
 - Samtools (http://www.samtools.sourceforge.net, used version: v1.6)
 
+### Tutorial data
+We have included a [test dataset](tutorial/) set as part of this repository. In the following steps, we will demonstrate how the scDam&Tools package can be implemented to analyse this data. The data comes from a mouse Embryonic Stem Cell (mESC) line expressing Dam-LaminB1. As such, we expect that the resulting DamID profiles show Lamina-Associated Domains (LADs). The raw sequencing data contains downsampled DamID and CEL-Seq reads of five single cells.
 
 ### Downloading genome reference files and generating HISAT2 index 
 - *Step 1:* For the purpose of this tutorial, the FASTA file, GTF file and HISAT2 index will all be placed in a folder named “references”. For that reason, generate this folder in your own working directory, or replace all mentions of the “references” directory with the path of your own choice:..
@@ -481,6 +483,7 @@ index01.DamID_BC_001.counts.hdf5    unique_counts   31702
 
 Plotting the binned counts observed over chromosome 19 yields the following enrichment profiles:
 ![Expected DamID profiles](tutorial/damid_output.png)
+These enrichment profiles are in line with the output we expect for a Dam-LaminB1 cell line.
 
 ### Processing the CEL-Seq reads to counts
 The subsequent steps need to be performed on all CEL-Seq demultiplexed files. It is highly recommended that this process be parallelized on a high-performance computing cluster. The amount of time necessary for these steps depends entirely on the number of libraries, samples per library and available computing cores.
