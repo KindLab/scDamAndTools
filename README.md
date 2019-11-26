@@ -340,10 +340,10 @@ In this step, the raw sequencing reads are split into multiple files based on th
 ```
 DamID_BC_001   3-CTTCAAGA
 DamID_BC_002   3-AGCCATGA
-CELseq_BC_025  6-CTGTACAA
-CELseq_BC_073  6-ATTCCTAG
+CELseq_BC_001  6-CTGTACAA
+CELseq_BC_002  6-ATTCCTAG
 ```
-Example data and relevant barcode file are included in the scDamAndTools package in the folder "test_data".
+Example data and relevant barcode file are included in the scDamAndTools package in the [tutorial](/tutorial) folder.
 
 NOTE: There may be multiple raw sequencing files pertaining to the same samples, for example from the different sequencing lanes. These files should be concatenated, latest prior to the sorting of aligned reads. 
 
@@ -385,7 +385,7 @@ In this case, there are no reads ambiguous or unmatched barcodes, since the test
 The subsequent steps need to be performed on all DamID demultiplexed files. It is highly recommended that this process be parallelized on a high-performance computing cluster. The amount of time necessary for these steps depends entirely on the number of libraries, samples per library and available computing cores.
 
 #### Option 1: Using the wrapper script
-- *Step 10.1:* Process the DamID reads to arrays of (UMI-unique) GATC counts. The script aligns the DamID reads to the genome and subsequently matches them to positions as indicated in the position array (see step 153). Since the GATC motif is cleaved in half by DpnI, the prefix “GA” is added to all reads prior to alignment. PCR-duplicates are filtered out based on the available UMI information. For this step, only the R1 reads are used since these contain the fragment aligning to the GATC motif:
+- *Step 10.1:* Process the DamID reads to arrays of (UMI-unique) GATC counts. The script aligns the DamID reads to the genome and subsequently matches them to positions as indicated in the position array (see step 6). Since the GATC motif is cleaved in half by DpnI, the prefix “GA” is added to all reads prior to alignment. PCR-duplicates are filtered out based on the available UMI information. For this step, only the R1 reads are used since these contain the fragment aligning to the GATC motif:
 ```
 OUTPREFIX="./data/damid/index01.DamID_BC_001";
 POSARRAY="./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.posarray.hdf5";
