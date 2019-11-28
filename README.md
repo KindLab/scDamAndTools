@@ -483,7 +483,7 @@ index01.DamID_BC_001.counts.hdf5    unique_counts   53612
 
 Plotting the binned counts observed over chromosome 19 yields the following enrichment profiles:
 ![Expected DamID profiles](tutorial/damid_output.png)  
-These enrichment profiles are in line with the output we expect for a Dam-LaminB1 cell line.
+These enrichment profiles are in line with the output we expect for a Dam-LaminB1 cell line, albeit somewhat sparse.
 
 ### Processing the CEL-Seq reads to counts
 The subsequent steps need to be performed on all CEL-Seq demultiplexed files. It is highly recommended that this process be parallelized on a high-performance computing cluster. The amount of time necessary for these steps depends entirely on the number of libraries, samples per library and available computing cores.
