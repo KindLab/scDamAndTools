@@ -338,10 +338,10 @@ In this step, the raw sequencing reads are split into multiple files based on th
 
 - *Step 8:* Create a file that describes the barcodes that were used in the library. The file should have two columns, listing the adapter names and sequences respectively. The location and length of UMIs should be indicated with numbers and dashes. The DamID and CEL-Seq barcodes in this experiment follow a design with 3bp UMI - 4bp barcode - 3bp UMI - 4bp barcode, with an additional "GA" at the end of the DamID barcodes. Using such a design, the barcode file of a library with two samples should look as follows:
 ```
-DamID2_BC_001   3-TGCT-3-GAGAGA
-DamID2_BC_002   3-ATTG-3-GAACGA
-CELseq2_BC_001  3-ACAG-3-AGGC
-CELseq2_BC_002  3-GTCT-3-GCCA
+DamID_BC_001   3-TGCT-3-GAGAGA
+DamID_BC_002   3-ATTG-3-GAACGA
+CELseq_BC_001  3-ACAG-3-AGGC
+CELseq_BC_002  3-GTCT-3-GCCA
 ```
 Example data and relevant barcode file are included in the scDamAndTools package in the [tutorial](/tutorial) folder.
 
