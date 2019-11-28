@@ -250,9 +250,9 @@ We have included a [test dataset](tutorial/) set as part of this repository. In 
 - *Step 1:* For the purpose of this tutorial, the FASTA file, GTF file and HISAT2 index will all be placed in a folder named “references”. For that reason, generate this folder in your own working directory, or replace all mentions of the “references” directory with the path of your own choice:..
 ```mkdir ./references```
 
-- *Step 2:* Download the reference sequence of the relevant species, for example from [the ensembl webpage](http://www.ensembl.org/info/data/ftp/index.html). Click the “DNA (FASTA)” link and download the file ending with ‘dna.primary_assembly.fa.gz’. Save the file in the “references” directory.
+- *Step 2:* Download the reference sequence of the relevant species, for example from [the ensembl webpage](http://www.ensembl.org/info/data/ftp/index.html). Click the “DNA (FASTA)” link and download the file ending with ‘dna.primary_assembly.fa.gz’. Unzip downloaded file and place it in the “references” directory.
 
-- *Step 3:* Download the GTF file for the relevant species, for example from [the ensembl webpage](http://www.ensembl.org/info/data/ftp/index.html). Place the downloaded file in the “references” directory.
+- *Step 3:* Download the GTF file for the relevant species, for example from [the ensembl webpage](http://www.ensembl.org/info/data/ftp/index.html). Unzip downloaded file and place it in the “references” directory.
 
 - *Step 4:* If using ERCC spike-ins, their sequences should be added to the genome FASTA file and the GTF file. 
 
@@ -269,7 +269,7 @@ To efficiently match obtained DamID reads to specific instances of the GATC moti
 #### Option 1: Using the wrapper script
 - *Step 6.1:* Generate the motif position and mappability arrays:
 ```
-IN_SILICO_READLENGTH=65
+IN_SILICO_READLENGTH=62
 ARRAY_PREFIX="./refarrays/Mus_musculus.GRCm38.dna.primary_assembly"
 create_motif_refarrays \
     -m "GATC" \
@@ -300,7 +300,7 @@ write_posarray.py \
 
 - *Step 6.3:* Generate _in silico_ reads mapping to GATC positions and align these back to the reference to determine the mappability of the positions:
 ```
-IN_SILICO_READLENGTH=65;
+IN_SILICO_READLENGTH=62;
 fetch_regions.py \
     -q \
     -l $IN_SILICO_READLENGTH \
@@ -316,16 +316,16 @@ fetch_regions.py \
   --sp '4,0' \
 | samtools view -ub - \
 | samtools sort -m 500M -l 9 \
-> ./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_65.sorted.bam
+> ./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_62.sorted.bam
 ```
 
 - *Step 6.4:* Use the aligned _in silico_ reads to generate a mappability array:
 ```
 generate_damid_counts.py \
     -vvv \
-    --outfile ./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_65.maparray.hdf5 \
+    --outfile ./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_62.maparray.hdf5 \
     --pos-file ./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.posarray.hdf5 \  
-    ./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_65.sorted.bam
+    ./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_62.sorted.bam
 ```
 
 #### Expected output
@@ -336,12 +336,12 @@ In this step, the raw sequencing reads are split into multiple files based on th
 
 - *Step 7:* If not already done so by the sequencing facility, demultiplex the raw data based on the used Illumina indices.
 
-- *Step 8:* Create a file that describes the barcodes that were used in the library. The file should have two columns, listing the adapter names and sequences respectively. The location and length of UMIs should be indicated with numbers and dashes. Using DamID barcodes with a 3 nucleotide UMI and CEL-Seq primers with a 6 nucleotide UMI, the barcode file of a library with two samples should look as follows:
+- *Step 8:* Create a file that describes the barcodes that were used in the library. The file should have two columns, listing the adapter names and sequences respectively. The location and length of UMIs should be indicated with numbers and dashes. The DamID and CEL-Seq barcodes in this experiment follow a design with 3bp UMI - 4bp barcode - 3bp UMI - 4bp barcode, with an additional "GA" at the end of the DamID barcodes. Using such a design, the barcode file of a library with two samples should look as follows:
 ```
-DamID_BC_001   3-CTTCAAGA
-DamID_BC_002   3-AGCCATGA
-CELseq_BC_001  6-CTGTACAA
-CELseq_BC_002  6-ATTCCTAG
+DamID2_BC_001   3-TGCT-3-GAGAGA
+DamID2_BC_002   3-ATTG-3-GAACGA
+CELseq2_BC_001  3-ACAG-3-AGGC
+CELseq2_BC_002  3-GTCT-3-GCCA
 ```
 Example data and relevant barcode file are included in the scDamAndTools package in the [tutorial](/tutorial) folder.
 
@@ -349,8 +349,8 @@ NOTE: There may be multiple raw sequencing files pertaining to the same samples,
 
 - *Step 9:* For each Illumina library, demultiplex the reads based on the used adapters. Make sure the output file format contains the fields “{name}” and “{readname}”, where the barcode name and paired-end read name will be inserted:
 ```
-OUTFMT=“./data/demultiplexed/index01.{name}.{readname}.fastq.gz"
-INFOFN=“./data/demultiplexed/index01.demultiplex_info.txt"
+OUTFMT="./data/demultiplexed/index01.{name}.{readname}.fastq.gz"
+INFOFN="./data/demultiplexed/index01.demultiplex_info.txt"
 demultiplex.py \
     -vvv \
     --mismatches 0 \
@@ -401,8 +401,8 @@ The script generates an alignment file ending in “.sorted.bam”, a GATC count
 
 - *Step 10.2:* Bin the GATC count files into genomically equal-sized bins. The resulting HDF5 file contains for each chromosome the number of observed UMI-unique counts for each bin:
 ```
-MAPARRAY=“./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_65.maparray.hdf5”
-OUTFN=“./data/damid/index01.DamID_BC_001.counts.binsize_100000.hdf5"
+MAPARRAY="./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_62.maparray.hdf5"
+OUTFN="./data/damid/index01.DamID_BC_001.counts.binsize_100000.hdf5"
 bin_damid_counts.py \
     -vvv \
     --mapfile $MAPARRAY \
@@ -451,8 +451,8 @@ generate_damid_counts.py \
 
 - *Step 10.3:* Bin the GATC count files into genomically equal-sized bins. The resulting HDF5 file contains for each chromosome the number of observed UMI-unique counts for each bin:
 ```
-MAPARRAY=“./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_65.maparray.hdf5”
-OUTFN=“./data/damid/index01.DamID_BC_001.counts.binsize_100000.hdf5"
+MAPARRAY="./refarrays/Mus_musculus.GRCm38.dna.primary_assembly.GATC.readlength_65.maparray.hdf5"
+OUTFN="./data/damid/index01.DamID_BC_001.counts.binsize_100000.hdf5"
 bin_damid_counts.py \
     -vvv \
     --mapfile $MAPARRAY \
