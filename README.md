@@ -256,11 +256,17 @@ We have included a [test dataset](tutorial/) set as part of this repository. In 
 
 - *Step 4:* If using ERCC spike-ins, their sequences should be added to the genome FASTA file and the GTF file. 
 
-- *Step 5:* Generate a HISAT2 index:
+- *Step 5:* Generate a HISAT2 index for future alignment of both DamID and CEL-Seq2 derived reads. In order for the HISAT2 index to optimally align spliced transcripts, it is necessary to provide information on exon and splice site locations. These can be extracted from the GTF file with scripts provided by HISAT2. Incorporating splice site and exon information requires a lot of working memory, approximately 200 Gb RAM for the human genome. If this memory is not available, HISAT2 indices for the most commonly used genomes can also be directly downloaded from the HISAT2 website (http://daehwankimlab.github.io/hisat2/download/). To build the index yourself:
 ```
-HISAT2_INDEX="./references/Mus_musculus.GRCm38.dna.primary_assembly.with_ERCC"
+GTF="./references/Mus_musculus.GRCm38.98.with_ERCC.gtf"
 FASTAFN="./references/Mus_musculus.GRCm38.dna.primary_assembly.with_ERCC.fa"
-hisat2-build $FASTAFN $HISAT2_INDEX
+HISAT2_INDEX="./references/Mus_musculus.GRCm38.dna.primary_assembly.with_ERCC"
+SSFN="./references/Mus_musculus.GRCm38.dna.primary_assembly.with_ERCC.splice_sites.txt"
+EXONFN="./references/Mus_musculus.GRCm38.dna.primary_assembly.with_ERCC.exons.txt"
+ 
+hisat2_extract_splice_sites.py $GTFFN > $SSFN
+hisat2_extract_exons.py $GTFFN > $EXONFN
+hisat2-build --ss $SSFN --exon $EXONFN $FASTAFN $HISAT2_INDEX
 ```
 
 ### Generate GATC reference arrays
